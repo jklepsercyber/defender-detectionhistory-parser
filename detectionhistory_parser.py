@@ -1,11 +1,12 @@
 import sys
 import os
 import argparse
+import io
 import json
 import binascii
 import re
-from datetime import datetime, timedelta
 import time
+from datetime import datetime, timedelta
 from typing import final
 sys.path.append("./")
 
@@ -32,7 +33,12 @@ arg_parser.add_argument('-r',
                         '--recursive',
                         action='store_true',
                         help='Recursive input. MUST SPECIFY if you need to parse a (sub)directory of DetectionHistory files. Only picks up files which match Windows\' naming convention of DetectionHistory files.',
-                        required=False)         
+                        required=False)     
+arg_parser.add_argument('-s',
+                        '--silent',
+                        action='store_true',
+                        help='Silences output to command line, including non-critical warnings, except for confirmation of finished processing and critical errors.',
+                        required=False)       
 arg_parser.add_argument('-v',
                         '--version',
                         action='version',
@@ -40,7 +46,7 @@ arg_parser.add_argument('-v',
 
 
 def byte_swap_to_int(hexval, str_flag=False):
-    # Reads in bytes, swaps endianness, and converts to an integer.
+    # Reads in bytes, swaps endianness, and converts to an integer if needed.
     # str_flag gives us the value to return an endian-swapped, hex-string representation of a value. For some fields, this is more appropriate.
 
     hex_int=0
@@ -58,6 +64,8 @@ def byte_swap_to_int(hexval, str_flag=False):
     return hex_int
 
 def parse_header_and_guid(file):
+    # Validates that file is a proper DetectionHistory file, and returns parsed GUID value located directly after header.
+
     header = file.read(6) # 6 = known DetectionHistory header size
     if header != b'\x08\x00\x00\x00\x08\x00': # check file header against known valid DetectionHistory file header
         print("Invalid DetectionHistory file!")
@@ -70,7 +78,6 @@ def parse_header_and_guid(file):
     guid_oct.append(binascii.hexlify(file.read(2))) # this hex is not flipped in file data
     guid_oct.append(binascii.hexlify(file.read(6))) # this hex is not flipped in file data
     
-    # HANDLE GUID HERE
     oct_count = 0
     while oct_count<=2:
         oct = guid_oct[oct_count]
@@ -89,9 +96,10 @@ def parse_header_and_guid(file):
 
 
 def parse_filetime(file):
+    # Parse known filetime hex string to a readable timestamp.
+
     filetime = ""
     filetime_nanoseconds = 0
-
     file.read(4) # skip ahead known distance between "Time" field and FILETIME timestamp
     filetime = binascii.hexlify(file.read(8))
     filetime_nanoseconds = byte_swap_to_int(filetime)
@@ -101,10 +109,11 @@ def parse_filetime(file):
 
 
 def parse_unmapped_value(file):
-    # This needs to be its own function, as decoding bytes of high hex vals can result in unmapped chars. We will also convert to Int64
-    # this function should also parse threat id into Int64, based on windows specs
+    # Decoding bytes of high hex vals can result in unmapped chars. Returns bytes of some unknown hex string.
+    # Based on Windows specs, ThreatID should be an Int64, though this does not always seem to be the case.
     # https://docs.microsoft.com/en-us/powershell/module/defender/get-mpthreatdetection?view=windowsserver2022-ps
     # https://www.windows-security.org/c328023496d244ced5d0c4445e4f1806/threat-id-exclusions
+
     unmapped_val = ""
     chunk = file.read(1) # initial byte to perform checks off of in loop
     while True: # loop that checks for beginning of unmapped value
@@ -118,7 +127,7 @@ def parse_unmapped_value(file):
             chunk = file.read(1) # go to next byte
 
     caution_sequences = [b'\x00', b'\x32', b'\x24', b'\x04', b'\x06'] # hex bytes observed in file which are known to delimit data from empty bytes
-    unmapped_val = file.read(3)
+    unmapped_val = file.read(3) # Windows should always allocate at least this much for an unknown hex string in this file.
     chunk = file.read(1)
     while True: # loop to read in rest of unmapped value, as well as check for ending point
         while chunk in caution_sequences:
@@ -134,6 +143,7 @@ def parse_unmapped_value(file):
 
 
 def parse_detection_history(user_in, user_out):
+    # Main function to parse given DetectionHistory file and write output fields to a readable file.
 
     filepath = user_in[0] # file directory itself
     outfile_name = user_in[1] # filename used for outfile writing
@@ -288,20 +298,23 @@ def parse_detection_history(user_in, user_out):
             
             break 
 
-        print(f"EOF in \"{filepath}\" detected. Closing...")
-        #print(parsed_value_dict)
+        print(f"EOF in \"{filepath}\" detected!")
         if not os.path.exists(outfolder):
             os.makedirs(outfolder)
         with open(f"{outfolder}\\{outfile_name}.json", 'w') as out:
             json.dump(parsed_value_dict, out, indent=4)
+        print("\n---------------------------------------")
                         
 
 
 def main():
-    print("\n---------------------------------------\nDetectionHistory Parser v1.0 by Jordan Klepser\n---------------------------------------\n")
+    print("\n---------------------------------------\nDetectionHistory Parser v1.0 by Jordan Klepser\nhttps://github.com/jklepsercyber/\n---------------------------------------\n")
     args = arg_parser.parse_args()
     list_files = []
     error_count = 0
+    silent = io.StringIO()
+    sys.stdout = silent if args.silent else sys.__stdout__
+
     if args.recursive and os.path.isdir(args.file): # search directory for DetectionHistory files
         for directory, dirnames, files in os.walk(args.file): # dirnames unused, but needs to be included for python's sake
             for name in files:
@@ -311,19 +324,21 @@ def main():
                     list_files.append([os.path.join(directory, name), name]) # save name, so we don't have to regex out filename during outfile writing later on
     elif os.path.isfile(args.file):
             list_files.append(args.file)
-            print(list_files)
     else:
-        print(f"Path \"{args.file}\" is not a valid file or directory. \n")
+        sys.stdout = sys.__stdout__
+        print(f"Path \"{args.file}\" is not a valid file or directory. Please validate the desired input and try again. \n")
         return
     
     for f in list_files:
         try:
             parse_detection_history(f, args.output)
         except Exception as e:
+            sys.stdout = sys.__stdout__
             print(f"ERROR: ||{e}|| caught in {f[0]}. Moving on to next file...")
-        print("\n---------------------------------------")
+            sys.stdout = silent if args.silent else sys.__stdout__
 
-    print(f"{len(list_files)-error_count} of {len(list_files)} DetectionHistory files found were successfully parsed, with output written to \"{args.output}\".")
+    sys.stdout = sys.__stdout__
+    print(f"{len(list_files)-error_count} of {len(list_files)} DetectionHistory files found were successfully parsed, with output written to \"{args.output}\" in {time.process_time()} seconds.")
     print("---------------------------------------")
 
 if __name__ == "__main__":
