@@ -18,6 +18,11 @@ arg_parser.add_argument('-f',
                         action='store',
                         help='Path of the file/directory you are parsing.',
                         required=True)
+arg_parser.add_argument('-g',
+                        '--greedy',
+                        action='store_true',
+                        help='(CAUTION) Intended for use with recursive option. Will grab all files without an extension in a directory, even if they do not match Windows\' naming convention of DetectionHistory files.',
+                        required=False)  
 arg_parser.add_argument('-o',
                         '--output',
                         action='store',
@@ -26,13 +31,13 @@ arg_parser.add_argument('-o',
 arg_parser.add_argument('-r',
                         '--recursive',
                         action='store_true',
-                        help='Recursive input. MUST SPECIFY if you need to parse a (sub)directory of DetectionHistory files.',
+                        help='Recursive input. MUST SPECIFY if you need to parse a (sub)directory of DetectionHistory files. Only picks up files which match Windows\' naming convention of DetectionHistory files.',
                         required=False)         
 arg_parser.add_argument('-v',
                         '--version',
                         action='version',
                         help='Displays the version of the application and exits.')
-                        
+
 
 def byte_swap_to_int(hexval, str_flag=False):
     # Reads in bytes, swaps endianness, and converts to an integer.
@@ -55,7 +60,8 @@ def byte_swap_to_int(hexval, str_flag=False):
 def parse_header_and_guid(file):
     header = file.read(6) # 6 = known DetectionHistory header size
     if header != b'\x08\x00\x00\x00\x08\x00': # check file header against known valid DetectionHistory file header
-        sys.exit("Invalid DetectionHistory file!")
+        print("Invalid DetectionHistory file!")
+        raise(IOError)
     file.read(18) # skipping over some zeroes, and an unknown 3-byte sequence between offset 08-0A
     guid_oct = list()
     guid_oct.append(binascii.hexlify(file.read(4)))
@@ -71,7 +77,7 @@ def parse_header_and_guid(file):
         newlist = [oct[i:i+2] for i in range(0, len(oct), 2)]
         newlist.reverse()
         guid_oct[oct_count] = b''.join(newlist)
-        oct_count=oct_count+1
+        oct_count += 1
 
     guid_final = (guid_oct[0].decode('utf-8')+"-"
         +guid_oct[1].decode('utf-8')+"-"
@@ -96,7 +102,7 @@ def parse_filetime(file):
 
 def parse_unmapped_value(file):
     # This needs to be its own function, as decoding bytes of high hex vals can result in unmapped chars. We will also convert to Int64
-    # this function should also parse threat id into Int64 based on windows specs
+    # this function should also parse threat id into Int64, based on windows specs
     # https://docs.microsoft.com/en-us/powershell/module/defender/get-mpthreatdetection?view=windowsserver2022-ps
     # https://www.windows-security.org/c328023496d244ced5d0c4445e4f1806/threat-id-exclusions
     unmapped_val = ""
@@ -111,7 +117,7 @@ def parse_unmapped_value(file):
         else:
             chunk = file.read(1) # go to next byte
 
-    caution_sequences = [b'\x00', b'\x32', b'\x24', b'\x04', b'\x06'] # hex bytes I have seen which are known to delimit data from empty bytes
+    caution_sequences = [b'\x00', b'\x32', b'\x24', b'\x04', b'\x06'] # hex bytes observed in file which are known to delimit data from empty bytes
     unmapped_val = file.read(3)
     chunk = file.read(1)
     while True: # loop to read in rest of unmapped value, as well as check for ending point
@@ -129,7 +135,8 @@ def parse_unmapped_value(file):
 
 def parse_detection_history(user_in, user_out):
 
-    filepath = user_in
+    filepath = user_in[0] # file directory itself
+    outfile_name = user_in[1] # filename used for outfile writing
     outfolder = user_out
     parsed_value_dict = dict()
 
@@ -155,6 +162,10 @@ def parse_detection_history(user_in, user_out):
         while True:
             while MAGIC_VERSION_SECTION:
                 chunk = f.read(2)
+                if not chunk:
+                    print("End of section or file detected. Moving on...")
+                    MAGIC_VERSION_SECTION = 0 # break out of this section
+                    break
                 if CURRENT_MODE==KEY_READ_MODE: 
                     if chunk==b'\x3A\x00': # first few sections are delimited by a Windows-1252 colon rather than multiple \x00 bytes
                         temp_key = re.sub("\x00", "", temp_key)
@@ -163,7 +174,7 @@ def parse_detection_history(user_in, user_out):
                     else:
                         temp_key = temp_key+chunk.decode('windows-1252')
                         if "f\x00i\x00l\x00e" in temp_key: # file key/value pair signifies end of values delimited by colons (or \x3A)
-                            print("End of Magic Version section detected!")
+                            print("End of Magic Version section!")
                             temp_key = re.sub("\x00", "", temp_key)
                             parsed_value_dict[temp_key] = "" # make sure "file" key gets assigned
                             CURRENT_MODE = VALUE_READ_MODE
@@ -176,19 +187,18 @@ def parse_detection_history(user_in, user_out):
                             temp_key = "" # reset temp key for next run
                             CURRENT_MODE=NULL_DATA_MODE
                     else:
-                        parsed_value_dict[temp_key] = parsed_value_dict[temp_key] + str(chunk.decode('windows-1252'))
+                        parsed_value_dict[temp_key] += chunk.decode('windows-1252')
                 elif CURRENT_MODE==NULL_DATA_MODE:
                     if len(re.sub(r'\W+', '', chunk.decode('windows-1252')))>=1: # regex function removes all non-alphanum characters
                         chunk = chunk+f.read(2) # double check if there are 2 alphanum chars in sequence. sometimes there are isolated, irrelevant hex values in file which are encodable chars
                         if len(re.sub(r'\W+', '', chunk.decode('windows-1252')))>=2: 
-                            temp_key = temp_key+chunk.decode('windows-1252')
+                            temp_key += chunk.decode('windows-1252')
                             CURRENT_MODE = KEY_READ_MODE
 
             while GENERAL_SECTION:
                 chunk = f.read(2)
                 if not chunk:
                     print("End of section or file detected. Moving on...")
-                    print(parsed_value_dict)
                     GENERAL_SECTION = 0 # break out of this section
                     break
                 elif CURRENT_MODE==NULL_DATA_MODE:
@@ -196,10 +206,10 @@ def parse_detection_history(user_in, user_out):
                         chunk = chunk+f.read(2) # double check if there are 2 alphanum chars in sequence. sometimes there are isolated, irrelevant hex values in file which are encodable chars
                         if len(re.sub(r'\W+', '', chunk.decode('windows-1252')))>=2: 
                             if LAST_READ_MODE==KEY_READ_MODE: # we need to switch back and forth between key and value reading
-                                parsed_value_dict[temp_key] = parsed_value_dict[temp_key] + str(chunk.decode('windows-1252'))
+                                parsed_value_dict[temp_key] += chunk.decode('windows-1252')
                                 CURRENT_MODE=VALUE_READ_MODE
                             else:
-                                temp_key = temp_key+chunk.decode('windows-1252')
+                                temp_key += chunk.decode('windows-1252')
                                 CURRENT_MODE=KEY_READ_MODE
                     elif chunk==b'\x0A\x00' or chunk==b'\x00\x0A':
                         print("End of General Section!")
@@ -231,25 +241,25 @@ def parse_detection_history(user_in, user_out):
                             CURRENT_MODE = NULL_DATA_MODE
                         elif CURRENT_MODE==VALUE_READ_MODE:
                             final_value = re.sub("\x00", "", parsed_value_dict[temp_key])
-                            if "Threat" in final_value[0:6] or "regkey" in final_value[0:6]:
-                                print("Irregularity in file caused error in parsing: reassigning keys...")
+                            if "Threat" in final_value[0:6] or "regkey" in final_value[0:6]: # check for values that should be keys
+                                print(f"Irregularity in file/empty value caused skip in parsing for keys \"{temp_key}\" and \"{final_value}\". Configuring...")
                                 parsed_value_dict[temp_key] = "" # reset extraneous value for temp_key
                                 parsed_value_dict[final_value] = "" # this value containing "Threat" or "regkey" should have been a key
                                 temp_key = final_value # set the final_value to the new key
                                 LAST_READ_MODE = KEY_READ_MODE # for that key, collect the next value
-                                if "ThreatTrackingThreatId" in temp_key:
+                                if "ThreatTrackingThreatId" in temp_key or "ThreatTrackingSize" in temp_key:
                                     parsed_value_dict[temp_key] = byte_swap_to_int(parse_unmapped_value(f))  
                                     temp_key = "" # reset for next KEY_READ_MODE run
                                     LAST_READ_MODE = VALUE_READ_MODE
-                            else:
+                            else: # when working as intended
                                 parsed_value_dict[temp_key] = final_value # finalize value
-                                LAST_READ_MODE = VALUE_READ_MODE # when working as intended
+                                LAST_READ_MODE = VALUE_READ_MODE 
                                 temp_key = "" # reset temp key for next KEY_READ_MODE
                             CURRENT_MODE = NULL_DATA_MODE
                     elif CURRENT_MODE==KEY_READ_MODE:
-                        temp_key = temp_key+chunk.decode('windows-1252')
+                        temp_key += chunk.decode('windows-1252')
                     elif CURRENT_MODE==VALUE_READ_MODE:
-                        parsed_value_dict[temp_key] = parsed_value_dict[temp_key] + str(chunk.decode('windows-1252'))
+                        parsed_value_dict[temp_key] += chunk.decode('windows-1252')
 
             while NEAREST_EOF_SECTION:
                 chunk = f.read(2)
@@ -268,7 +278,7 @@ def parse_detection_history(user_in, user_out):
                                 parsed_value_dict[EOF_SECTION_KEYS[CURRENT_EOF_SECTION_KEY]] = chunk.decode('windows-1252')
                                 CURRENT_MODE=VALUE_READ_MODE
                     except UnicodeDecodeError as e:
-                        print(f"!!{e}!! caught for chunk {chunk} : assuming unreadable hex pattern and skipping...")
+                        print(f"||{e}|| caught for bytes {chunk} : Unreadable hex pattern identified. Continuing...")
                 elif CURRENT_MODE==VALUE_READ_MODE:                  
                     if chunk==b'\x00\x00': # Check to switch to NULL_MODE 
                         parsed_value_dict[EOF_SECTION_KEYS[CURRENT_EOF_SECTION_KEY]] = re.sub("\x00", "", parsed_value_dict[EOF_SECTION_KEYS[CURRENT_EOF_SECTION_KEY]])       
@@ -278,11 +288,11 @@ def parse_detection_history(user_in, user_out):
             
             break 
 
-        print("EOF detected. Closing...")
-        print(parsed_value_dict)
+        print(f"EOF in \"{filepath}\" detected. Closing...")
+        #print(parsed_value_dict)
         if not os.path.exists(outfolder):
             os.makedirs(outfolder)
-        with open(f"{outfolder}\\{user_in}.json", 'w') as out:
+        with open(f"{outfolder}\\{outfile_name}.json", 'w') as out:
             json.dump(parsed_value_dict, out, indent=4)
                         
 
@@ -290,11 +300,31 @@ def parse_detection_history(user_in, user_out):
 def main():
     print("\n---------------------------------------\nDetectionHistory Parser v1.0 by Jordan Klepser\n---------------------------------------\n")
     args = arg_parser.parse_args()
-    if args.recursive:
-        print("Recursive flag is true!")
+    list_files = []
+    error_count = 0
+    if args.recursive and os.path.isdir(args.file): # search directory for DetectionHistory files
+        for directory, dirnames, files in os.walk(args.file): # dirnames unused, but needs to be included for python's sake
+            for name in files:
+                if not "." in name and args.greedy: # grabs all files without extension
+                    list_files.append([os.path.join(directory, name), name]) # save name, so we don't have to regex out filename during outfile writing later on
+                elif not "." in name and re.match(r'[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}', name): # regex matches default DetectionHistory file naming convention
+                    list_files.append([os.path.join(directory, name), name]) # save name, so we don't have to regex out filename during outfile writing later on
+    elif os.path.isfile(args.file):
+            list_files.append(args.file)
+            print(list_files)
     else:
-        parse_detection_history(args.file, args.output)
-    print("\n---------------------------------------\n")
+        print(f"Path \"{args.file}\" is not a valid file or directory. \n")
+        return
+    
+    for f in list_files:
+        try:
+            parse_detection_history(f, args.output)
+        except Exception as e:
+            print(f"ERROR: ||{e}|| caught in {f[0]}. Moving on to next file...")
+        print("\n---------------------------------------")
+
+    print(f"{len(list_files)-error_count} of {len(list_files)} DetectionHistory files found were successfully parsed, with output written to \"{args.output}\".")
+    print("---------------------------------------")
 
 if __name__ == "__main__":
     main()
