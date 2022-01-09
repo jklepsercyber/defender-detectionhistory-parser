@@ -1,4 +1,4 @@
-The files parsed by this application may be found on any Windows system, if they exist, under [root]\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory\[numbered folder]\[File GUID]
+The files parsed by this application may be found on any Windows system, if they exist, under [root]\\ProgramData\\Microsoft\\Windows Defender\\Scans\\History\\Service\\DetectionHistory\\[numbered folder]\\[File GUID]
 
 ###
 NOTES
