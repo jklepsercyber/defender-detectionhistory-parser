@@ -8,7 +8,7 @@ This repo contains the open-source Python code of my Windows Defender DetectionH
 
 ## Artifact Creation Documentation
 
-DetectionHistory files may be created and found on, at the very least, Windows 10 systems. The creation of these files is an afterproduct of Windows Defender's real-time/cloud-delivered protection(ATP) blocking threats such as Potentially Unwanted Applications (PUAs), viruses, worms, trojans, etc. The user should have these features turned on in the Windows Security app, under Windows Security > Virus and Threat Protection > Virus and Threat Protection Settings:  
+DetectionHistory files may be created and found on, at the very least, Windows 10 systems. The creation of these files is an afterproduct of Windows Defender's real-time/cloud-delivered protection(RTP) blocking threats such as Potentially Unwanted Applications (PUAs), viruses, worms, trojans, etc. The user should have these features turned on in the Windows Security app, under Windows Security > Virus and Threat Protection > Virus and Threat Protection Settings:  
 
 ![RequiredSettings](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/security%20settings.PNG?raw=true)
 
@@ -19,6 +19,8 @@ When Windows Defender detects one of these threats, the user is presented first 
 At this point, Windows Defender places a DetectionHistory file under [root]\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory\[numbered folder]\[File GUID]. As long as the file exists in this directory, Windows Defender will pick it up and display a few details in the "Protection History" tab. This can be found under Windows Security > Virus and Threat Protection > Current Threats/Protection History. If this DetectionHistory file shown here is deleted, the notification would disappear along with it:
 
 ![FileAndNoti](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/file%20and%20protection%20history.PNG?raw=true)
+
+A great resource for attempting to generate these notifications on your own system can be found ![here](https://demo.wd.microsoft.com/). Included are benign PUA and malware files designed to attract Windows Defender RTP/Defender ATP's attention.
 
 ## Artifact Structure Documentation
 
