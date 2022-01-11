@@ -45,20 +45,20 @@ To summarize, the available data from the first section is as follows:
 
 This is the biggest section of the DetectionHistory file. The majority of its values are plaintext hash values, registry keys or identifiers. Some field names are followed with nearly empty values, only containing one or two bytes, whose meaning is unknown. Some values, which I will go over, are stored as endian-swapped hexademical numbers. 
 
-![secondsection]()
+![secondsection](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/secondsection.png)
 
 The large box shows the general form of data in this section- A field name, seperated by empty space as the "file" field was in the last section, followed by some plaintext or hexadecimal value. A field with a hexadecimal value is shown under ThreatTrackingStartTime, shown in the lower set of boxes, and also the only timestamp value included in the file. The timestamp is stored in FILETIME format, in the UTC timezone. As such, a custom function was written into the parser to perform these operations. The operations include an endian-swap and manual hex conversion. 
 
-![threatsize]()
-![threatid]()
+![threatsize](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/size.PNG)
+![threatid](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/id.PNG)
 
 Some other hexadecimal values simply need to be endian-swapped and converted to integers. For example, ThreatTrackingSize and ThreatTrackingThreatID provide the size and threat ID of the detected threat in hex, respectively. The Threat ID is believed to be a way for Microsoft to internally track threats detected via Windows Defender ATP. This is because not only is there evidence in Windows EVTX of Windows Defender uploading files to Microsoft for further analysis (Windows-Defender/Operational Event ID 2050), there is evidence of the Threat ID being included in the Windows Defender detection Event (Windows-Defender/Operational Event ID corresponding to this DetectionHistory file. 
 
-![evtx_1116_and_2050]()
+![evtx_1116_and_2050](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/evtx_1116_2050.PNG)
 
 While there is not much documentation on the use of Threat IDs, ![Windows 10 and Server 2019 Powershell appears to include a way to use Threat IDs to retrieve previous Windows Defender detections.](https://docs.microsoft.com/en-us/powershell/module/defender/get-mpthreatdetection?view=windowsserver2019-ps) On a side note, the Threat ID pictured above was also included in the First Section of the file (without its accompanying field name), right after the file header. Can you find it?
 
-![regkey]()
+![regkey](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/regkey.png)
 
 The contents of the Second Section may differ between different threat types (PUAs, Trojan, Virus, Worm). An example in DetectionHistory files generated from PUAs is the inclusion of the PUA's "regkey" and "uninstall" registry key fields, which, if they exist on the system, would again provide another source of evidence that the threat once existed on the host machine. The "regkey" field has been observed to provide an SID, a useful piece of information in tracking who or what accounts may have tried to introduce threats on a machine. In threats other than PUAs, even empty regkey fields are not included in the DetectionHistory file. 
 
