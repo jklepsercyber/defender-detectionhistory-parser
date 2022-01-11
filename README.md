@@ -20,7 +20,7 @@ At this point, Windows Defender places a DetectionHistory file under [root]\Prog
 
 ![FileAndNoti](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/file%20and%20protection%20history.PNG?raw=true)
 
-A great resource for attempting to generate these notifications on your own system can be found ![here](https://demo.wd.microsoft.com/). Included are benign PUA and malware files designed to attract Windows Defender RTP/Defender ATP's attention.
+A great resource for attempting to generate these notifications on your own system can be found [here](https://demo.wd.microsoft.com/). Included are benign PUA and malware files designed to attract Windows Defender RTP/Defender ATP's attention.
 
 ## Artifact Structure Documentation
 
@@ -58,7 +58,7 @@ Some other hexadecimal values simply need to be endian-swapped and converted to 
 
 ![evtx_1116_and_2050](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/evtx_1116_2050.PNG)
 
-While there is not much documentation on the use of Threat IDs, ![Windows 10 and Server 2019 Powershell appears to include a way to use Threat IDs to retrieve previous Windows Defender detections.](https://docs.microsoft.com/en-us/powershell/module/defender/get-mpthreatdetection?view=windowsserver2019-ps) On a side note, the Threat ID pictured above was also included in the First Section of the file (without its accompanying field name), right after the file header. Can you find it?
+While there is not much documentation on the use of Threat IDs, [Windows 10 and Server 2019 Powershell appears to include a way to use Threat IDs to retrieve previous Windows Defender detections.](https://docs.microsoft.com/en-us/powershell/module/defender/get-mpthreatdetection?view=windowsserver2019-ps) On a side note, the Threat ID pictured above was also included in the First Section of the file (without its accompanying field name), right after the file header. Can you find it?
 
 ![regkey](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/regkey.png)
 
