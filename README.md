@@ -24,13 +24,13 @@ At this point, Windows Defender places a DetectionHistory file under [root]\Prog
 
 For clarity and reader accessibility, this documentation will describe the contents of the DetectionHistory file, "8CC4BE3D-8D3F-4952-9953-F24EB6638A37", located in this repo.
 
-*First Section*
+**First Section**
 
-![FileBegin]()
+![FileBegin](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/filebegin.png)
 
 The file begins with a header, '0x0800000008', taking up the first 5 bytes in every known scenario. The parser takes this into account and will move on from the current file if the bytes don't match this header. More complicated is the file GUID- interestingly, the first 3 numbers (seperated by dashes) have their endianness swapped, while the remaining two numbers are unmodified. The GUID does not appear anywhere else on the host system that I have found. It may just be used to generate the DetectionHistory filename. Following this, we begin to see some real information. Each key/value pair is delimited by an ASCII colon/'0x3A' byte, making it easy differentiating field names from their values. While the purpose of "Magic Version" is unknown, we do see the threat name that would have been presented to the user in the original Windows Defender notification (in this case, Trojan:Win32/Ulthar A!ml).
 
-![firsttransition]()
+![firsttransition](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/magicvers_to_general.png)
 
 Moving on, we see the same structure continued, until we are presented with the file name which Windows Defender detected the threat from. While this is useful information, it is not delimited with a colon- rather, empty space with one or two bytes in between that serve to mark the beginning of some value. This "file" field serves as a transition into how the file's information is stored in its next major section.
 
@@ -41,7 +41,7 @@ To summarize, the available data from the first section is as follows:
 -  Threat Type / Threat Name
 -  File Name
 
-*Second Section*
+**Second Section**
 
 This is the biggest section of the DetectionHistory file.
 
