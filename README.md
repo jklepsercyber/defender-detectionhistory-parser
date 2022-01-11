@@ -1,6 +1,6 @@
 # DetectionHistory Parser
 
-Lorem Ipsum
+This repo contains the open-source Python code of my Windows Defender DetectionHistory parser, and the code packaged into an executable for easy use.
 
 ## Command Line Interface
 
@@ -16,12 +16,34 @@ When Windows Defender detects one of these threats, the user is presented first 
 
 ![Noti](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/TestNotification.PNG?raw=true)
 
-At this point, if the DetectionHistory file is in this directory, Windows Defender will pick it up and display a few details in the "Protection History" tab, under Windows Security > Virus and Threat Protection > Current Threats/Protection History. If this DetectionHistory file shown here is deleted, the notification would disappear along with it:
+At this point, Windows Defender places a DetectionHistory file under [root]\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory\[numbered folder]\[File GUID]. As long as the file exists in this directory, Windows Defender will pick it up and display a few details in the "Protection History" tab. This can be found under Windows Security > Virus and Threat Protection > Current Threats/Protection History. If this DetectionHistory file shown here is deleted, the notification would disappear along with it:
 
 ![FileAndNoti](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/file%20and%20protection%20history.PNG?raw=true)
 
+## Artifact Structure Documentation
 
-The files exist under [root]\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory\[numbered folder]\[File GUID]. An example of what the directory might look like is provided below:
+For clarity and reader accessibility, this documentation will describe the contents of the DetectionHistory file, "8CC4BE3D-8D3F-4952-9953-F24EB6638A37", located in this repo.
+
+*First Section*
+
+![FileBegin]()
+
+The file begins with a header, '0x0800000008', taking up the first 5 bytes in every known scenario. The parser takes this into account and will move on from the current file if the bytes don't match this header. More complicated is the file GUID- interestingly, the first 3 numbers (seperated by dashes) have their endianness swapped, while the remaining two numbers are unmodified. The GUID does not appear anywhere else on the host system that I have found. It may just be used to generate the DetectionHistory filename. Following this, we begin to see some real information. Each key/value pair is delimited by an ASCII colon/'0x3A' byte, making it easy differentiating field names from their values. While the purpose of "Magic Version" is unknown, we do see the threat name that would have been presented to the user in the original Windows Defender notification (in this case, Trojan:Win32/Ulthar A!ml).
+
+![firsttransition]()
+
+Moving on, we see the same structure continued, until we are presented with the file name which Windows Defender detected the threat from. While this is useful information, it is not delimited with a colon- rather, empty space with one or two bytes in between that serve to mark the beginning of some value. This "file" field serves as a transition into how the file's information is stored in its next major section.
+
+To summarize, the available data from the first section is as follows:
+
+-  DetectionHistory GUID
+-  Magic Version
+-  Threat Type / Threat Name
+-  File Name
+
+*Second Section*
+
+This is the biggest section of the DetectionHistory file.
 
 
 ## Parser Documentation

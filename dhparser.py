@@ -161,7 +161,7 @@ def parse_detection_history(user_in, user_out):
     GENERAL_SECTION = b'\x05'
     NEAREST_EOF_SECTION = b'\x06'
     # EXTRA NEEDED VARIABLES
-    EOF_SECTION_KEYS = ["HostMachineOrUser","SpawningProcess","SecurityGroup"] # Fields in this section not explicity defined in file, so fields named off based off current knowledge
+    EOF_SECTION_KEYS = ["User","SpawningProcessName","SecurityGroup"] # Fields in this section not explicity defined in file, so fields named off based off current knowledge
     CURRENT_EOF_SECTION_KEY = -1
 
     with open(filepath, 'rb') as f:
