@@ -113,7 +113,7 @@ Of course, this is only available as long as the DetectionHistory files exist in
 
 ## Conclusion
 
-This parser is a continued project, to be updated with more features and fixed issues as time goes on. Please let me know if you have any questions or concerns regarding this repo. Special thanks to those listed here for their continued support throughout the process:
+This parser is a continued project, to be updated with more features, fixed issues, and better documentation as time goes on. Please let me know if you have any questions or concerns regarding this repo. Special thanks to those listed here for their continued support throughout the process:
 
 -  SANS Institute
 -  Chad Tilbury
