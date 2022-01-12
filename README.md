@@ -32,7 +32,7 @@ For clarity and reader accessibility, this documentation will describe the conte
 
 The file begins with a header, '0x0800000008', taking up the first 5 bytes in every known scenario. The parser takes this into account and will move on from the current file if the bytes don't match this header. More complicated is the DetectionID GUID- interestingly, the first 3 numbers (seperated by dashes) have their endianness swapped, while the remaining two numbers are unmodified. The DetectionID is used by Windows' API to keep track of each threat on the backend. Following this, we see a familar dictionary-like style of information. Each key/value pair is delimited by an ASCII colon/'0x3A' byte, making it easy differentiating field names from their values. While the purpose of "Magic Version" is unknown, we do see the threat name that would have been presented to the user in the original Windows Defender notification (in this case, Trojan:Win32/Ulthar.A!ml).
 
-![threatstatusid]()
+![threatstatusid](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/threatstatusid.png)
 
 At the same hex offset, '0000000F0', in every DetectionHistory file, the current ThreatStatusID of the given DetectionID can be found. The ID has many different values which represent any user action taken on the threat, such a quarantine, remove, allow, etc. As the user takes actions, the DetectionHistory file is updated with the corresponding ThreatStatusID. More information is available for each ThreatStatus [on Microsoft's MSFT_MpThreatDetection class documentation.](https://docs.microsoft.com/en-us/previous-versions/windows/desktop/defender/msft-mpthreatdetection) 
 
@@ -90,7 +90,7 @@ To summarize, the available data from the second section is as follows:
 
 **Third Section**
 
-![thirdsection]()
+![thirdsection](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/thirdsection.png)
 
 The beginning of the third and final section of the file is delimited by a '\0x0A\0x00' byte sequence, immediately followed by the same timestamp used in ThreatTrackingStartTime. This is visible in the box on line 00000730. The sequence does not decode to a ASCII character and is used nowhere else, so this makes it easy for the parser to tell when the Third Section begins. The reason that the timestamp is included again here is unknown.
 
@@ -105,7 +105,7 @@ To summarize, the available data from the second section is as follows:
 
 If you are curious about how Windows stores this data in a live, API-interactive format, the MSFT_MpThreatDetection class, viewable from PowerShell, displays data from each DetectionHistory file as well.
 
-![livesystem]()
+![livesystem](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/liveview.PNG)
 
 Of course, this is only available as long as the DetectionHistory files exist in their respective directory.
 
