@@ -34,7 +34,7 @@ The file begins with a header, '0x0800000008', taking up the first 5 bytes in ev
 
 ![threatstatusid]()
 
-At the same hex offset, '0000000F0', in every DetectionHistory file, the current ThreatStatusID of the given DetectionID can be found. The ID has many different values which represent any user action taken on the threat, such a quarantine, remove, allow, etc. As the user takes actions, the DetectionHistory file is updated with the corresponding ThreatStatusID. More information is available for each ThreatStatus [on Microsoft's WMIv2 API documentation.](https://docs.microsoft.com/en-us/previous-versions/windows/desktop/defender/msft-mpthreatdetection) 
+At the same hex offset, '0000000F0', in every DetectionHistory file, the current ThreatStatusID of the given DetectionID can be found. The ID has many different values which represent any user action taken on the threat, such a quarantine, remove, allow, etc. As the user takes actions, the DetectionHistory file is updated with the corresponding ThreatStatusID. More information is available for each ThreatStatus [on Microsoft's MSFT_MpThreatDetection class documentation.](https://docs.microsoft.com/en-us/previous-versions/windows/desktop/defender/msft-mpthreatdetection) 
 
 ![firsttransition](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/magicvers_to_general.png)
 
@@ -103,5 +103,17 @@ To summarize, the available data from the second section is as follows:
 
 ## Live System Viewing
 
+If you are curious about how Windows stores this data in a live, API-interactive format, the MSFT_MpThreatDetection class, viewable from PowerShell, displays data from each DetectionHistory file as well.
 
+![livesystem]()
+
+Of course, this is only available as long as the DetectionHistory files exist in their respective directory.
+
+## Conclusion
+
+This parser is a continued project, to be updated with more features and fixed issues as time goes on. Please let me know if you have any questions or concerns regarding this repo. Special thanks to those listed here for their continued support throughout the process:
+
+-  SANS Institute
+-  Chad Tilbury
+-  David Nides
 
