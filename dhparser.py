@@ -289,7 +289,7 @@ def parse_detection_history(user_in, user_out):
                     try:
                         if len(re.sub(r'\W+', '', chunk.decode('windows-1252')))>=1: # regex function removes all non-alphanum characters
                             chunk = chunk+f.read(2) # double check if there are 2 alphanum chars in sequence. sometimes there are isolated, irrelevant hex values in file which are encodable chars
-                            if len(re.sub(r':(?=..(?<!\d:\d\d))|[^a-zA-Z0-9 ](?<!:)', '', chunk.decode('windows-1252')))>=2: # ensure colons are treated as alphanum chars with regex
+                            if len(re.sub(r':(?=..(?<!\d:\d\d))|[^a-zA-Z0-9 ](?<!:)', '', chunk.decode('windows-1252')))>=2 and b'\x00' in chunk: # ensure colons are treated as alphanum chars with regex
                                 CURRENT_EOF_SECTION_KEY=CURRENT_EOF_SECTION_KEY+1 
                                 parsed_value_dict[EOF_SECTION_KEYS[CURRENT_EOF_SECTION_KEY]] = chunk.decode('windows-1252')
                                 CURRENT_MODE=VALUE_READ_MODE
