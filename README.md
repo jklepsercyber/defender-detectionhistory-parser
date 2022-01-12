@@ -16,7 +16,7 @@ When Windows Defender detects one of these threats, the user is presented first 
 
 ![Noti](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/TestNotification.PNG?raw=true)
 
-At this point, Windows Defender places a DetectionHistory file under [root]\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory\[numbered folder]\[File GUID]. As long as the file exists in this directory, Windows Defender will pick it up and display a few details in the "Protection History" tab. This can be found under Windows Security > Virus and Threat Protection > Current Threats/Protection History. If this DetectionHistory file shown here is deleted, the notification would disappear along with it:
+At this point, Windows Defender places a DetectionHistory file under **[root]\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory\[numbered folder]\[File GUID]**. As long as the file exists in this directory, Windows Defender will pick it up and display a few details in the "Protection History" tab. This can be found under Windows Security > Virus and Threat Protection > Current Threats/Protection History. If this DetectionHistory file shown here is deleted, the notification would disappear along with it:
 
 ![FileAndNoti](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/file%20and%20protection%20history.PNG?raw=true)
 
@@ -59,11 +59,11 @@ The large box shows the general form of data in this section- A field name, sepe
 ![threatsize](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/size.PNG)
 ![threatid](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/id.PNG)
 
-Some other hexadecimal values simply need to be endian-swapped and converted to integers. For example, ThreatTrackingSize and ThreatTrackingThreatID provide the size and threat ID of the detected threat in hex, respectively. The Threat ID is believed to be a way for Microsoft to internally track threats detected via Windows Defender ATP. This is because not only is there evidence in Windows EVTX of Windows Defender uploading files to Microsoft for further analysis (Windows-Defender/Operational Event ID 2050), there is evidence of the Threat ID being included in the Windows Defender detection Event (Windows-Defender/Operational Event ID corresponding to this DetectionHistory file. 
+Some other hexadecimal values simply need to be endian-swapped and converted to integers. For example, ThreatTrackingSize and ThreatTrackingThreatID provide the size and ThreatID of the detected threat in hex, respectively. The ThreatID is believed to be a way for Microsoft to internally track threats detected via Windows Defender ATP. This is because not only is there evidence in Windows EVTX of Windows Defender uploading files to Microsoft for further analysis (Windows-Defender/Operational Event ID 2050), there is evidence of the Threat ID being included in the Windows Defender detection Event (Windows-Defender/Operational Event ID 1116) corresponding to this DetectionHistory file. 
 
 ![evtx_1116_and_2050](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/evtx_1116_2050.PNG)
 
-While there is not much documentation on the use of Threat IDs, [Windows 10 and Server 2019 Powershell appears to include a way to use Threat IDs to retrieve previous Windows Defender detections.](https://docs.microsoft.com/en-us/powershell/module/defender/get-mpthreatdetection?view=windowsserver2019-ps) On a side note, the Threat ID pictured above was also included in the First Section of the file (without its accompanying field name), right after the file header. Can you find it?
+While there is not much documentation on the use of ThreatIDs, [Windows 10 and Server 2019 Powershell appears to include a way to use ThreatIDs to retrieve previous Windows Defender detections.](https://docs.microsoft.com/en-us/powershell/module/defender/get-mpthreatdetection?view=windowsserver2019-ps) On a side note, the Threat ID pictured above was also included in the first section (without its accompanying field name), right after the file header (in this case, '0x9D170480'). The reason for this may only serve for Windows to have a place to easily retrieve the ThreatID. Can you find it?
 
 ![regkey](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/regkey.png)
 
