@@ -30,7 +30,11 @@ For clarity and reader accessibility, this documentation will describe the conte
 
 ![FileBegin](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/filebegin.png)
 
-The file begins with a header, '0x0800000008', taking up the first 5 bytes in every known scenario. The parser takes this into account and will move on from the current file if the bytes don't match this header. More complicated is the file GUID- interestingly, the first 3 numbers (seperated by dashes) have their endianness swapped, while the remaining two numbers are unmodified. The GUID does not appear anywhere else on the host system that I have found. It may just be used to generate the DetectionHistory filename. Following this, we begin to see some real information. Each key/value pair is delimited by an ASCII colon/'0x3A' byte, making it easy differentiating field names from their values. While the purpose of "Magic Version" is unknown, we do see the threat name that would have been presented to the user in the original Windows Defender notification (in this case, Trojan:Win32/Ulthar.A!ml).
+The file begins with a header, '0x0800000008', taking up the first 5 bytes in every known scenario. The parser takes this into account and will move on from the current file if the bytes don't match this header. More complicated is the DetectionID GUID- interestingly, the first 3 numbers (seperated by dashes) have their endianness swapped, while the remaining two numbers are unmodified. The DetectionID is used by Windows' API to keep track of each threat on the backend. Following this, we see a familar dictionary-like style of information. Each key/value pair is delimited by an ASCII colon/'0x3A' byte, making it easy differentiating field names from their values. While the purpose of "Magic Version" is unknown, we do see the threat name that would have been presented to the user in the original Windows Defender notification (in this case, Trojan:Win32/Ulthar.A!ml).
+
+![threatstatusid]()
+
+At the same hex offset, '0000000F0', in every DetectionHistory file, the current ThreatStatusID of the given DetectionID can be found. The ID has many different values which represent any user action taken on the threat, such a quarantine, remove, allow, etc. As the user takes actions, the DetectionHistory file is updated with the corresponding ThreatStatusID. More information is available for each ThreatStatus [on Microsoft's WMIv2 API documentation.](https://docs.microsoft.com/en-us/previous-versions/windows/desktop/defender/msft-mpthreatdetection) 
 
 ![firsttransition](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/magicvers_to_general.png)
 
@@ -40,6 +44,7 @@ To summarize, the available data from the first section is as follows:
 
 -  DetectionHistory GUID
 -  Magic Version
+-  ThreatStatusID
 -  Threat Type / Threat Name
 -  File Name
 
@@ -62,7 +67,7 @@ While there is not much documentation on the use of Threat IDs, [Windows 10 and 
 
 ![regkey](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/regkey.png)
 
-The contents of the Second Section may differ between different threat types (PUAs, Trojan, Virus, Worm). An example in DetectionHistory files generated from PUAs is the inclusion of the PUA's "regkey" and "uninstall" registry key fields, which, if they exist on the system, would again provide another source of evidence that the threat once existed on the host machine. The "regkey" field has been observed to provide an SID, a useful piece of information in tracking who or what accounts may have tried to introduce threats on a machine. In threats other than PUAs, even empty regkey fields are not included in the DetectionHistory file. 
+The contents of the second section may differ between different threat types (PUAs, Trojan, Virus, Worm). An example in DetectionHistory files generated from PUAs is the inclusion of the PUA's "regkey" and "uninstall" registry key fields, which, if they exist on the system, would again provide another source of evidence that the threat once existed on the host machine. The "regkey" field has been observed to provide an SID, a useful piece of information in tracking who or what accounts may have tried to introduce threats on a machine. In threats other than PUAs, even empty regkey fields are not included in the DetectionHistory file. 
 
 To summarize, the available data from the second section is as follows:
 
@@ -85,10 +90,18 @@ To summarize, the available data from the second section is as follows:
 
 **Third Section**
 
-## Parser Documentation
+![thirdsection]()
 
-###
-NOTES
-###
+The beginning of the third and final section of the file is delimited by a '\0x0A\0x00' byte sequence, immediately followed by the same timestamp used in ThreatTrackingStartTime. This is visible in the box on line 00000730. The sequence does not decode to a ASCII character and is used nowhere else, so this makes it easy for the parser to tell when the Third Section begins. The reason that the timestamp is included again here is unknown.
 
-- Most hex numbers in this file are stored with a swapped endianness.
+There are a maximum of three fields we may extract from the section, shown above and boxed on the right. The first two values, which reference a Desktop user and "explorer.exe", are known to represent the domain user and the spawning process, or in other words, the process used to launch the identified threat. This could be useful when identifying if certain pieces of malware were run from the command line, and then detected by Defender RTP. The third field is of an unknown purpose, as it is not always present through each DetectionHistory file. Given the value of "NT AUTHORITY/SYSTEM", it is likely that this represents the security group the user account belongs to (through analysis of the user SID).
+
+To summarize, the available data from the second section is as follows:
+-  User
+-  SpawningProcess
+-  SecurityGroup
+
+## Live System Viewing
+
+
+

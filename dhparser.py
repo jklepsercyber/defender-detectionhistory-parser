@@ -199,6 +199,8 @@ def parse_detection_history(user_in, user_out):
                     else:
                         parsed_value_dict[temp_key] += chunk.decode('windows-1252')
                 elif CURRENT_MODE==NULL_DATA_MODE:
+                    if f.tell()==242:
+                        parsed_value_dict["ThreatStatusID"] = byte_swap_to_int(binascii.hexlify(chunk))
                     if len(re.sub(r'\W+', '', chunk.decode('windows-1252')))>=1: # regex function removes all non-alphanum characters
                         chunk = chunk+f.read(2) # double check if there are 2 alphanum chars in sequence. sometimes there are isolated, irrelevant hex values in file which are encodable chars
                         if len(re.sub(r'\W+', '', chunk.decode('windows-1252')))>=2: 
@@ -222,8 +224,12 @@ def parse_detection_history(user_in, user_out):
                                 temp_key += chunk.decode('windows-1252')
                                 CURRENT_MODE=KEY_READ_MODE
                     elif chunk==b'\x0A\x00' or chunk==b'\x00\x0A':
+                        f.read(2)
+                        chunk = f.read(4)
+                        if chunk==b'\x15\x00\x00\x00' or chunk==chunk==b'\x00\x15\x00\x00': # false positives
+                            continue
                         print("End of General Section!")
-                        f.read(10) # skip over unneeded section of hex, delimited by "\x0A"
+                        f.read(4) # skip over unneeded section of hex
                         GENERAL_SECTION = 0 # break out of this section
                 else: # Applies to KEY_READ or VALUE_READ mode
                     if chunk==b'\x00\x00': # Check to switch to NULL_MODE must happen in either KEY_READ or VALUE_READ mode          
@@ -323,23 +329,27 @@ def main():
                 elif not "." in name and re.match(r'[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}', name): # regex matches default DetectionHistory file naming convention
                     list_files.append([os.path.join(directory, name), name]) # save name, so we don't have to regex out filename during outfile writing later on
     elif os.path.isfile(args.file):
-            list_files.append(args.file)
+        list_files.append(args.file)
     else:
         sys.stdout = sys.__stdout__
         print(f"Path \"{args.file}\" is not a valid file or directory. Please validate the desired input and try again. \n")
         return
-    
+
     for f in list_files:
         try:
-            parse_detection_history(f, args.output)
+            if len(list_files)==1:
+                parse_detection_history([os.path.normpath(args.file), os.path.basename(args.file)], args.output)
+                break
+            else:
+                parse_detection_history(f, args.output)
         except Exception as e:
             sys.stdout = sys.__stdout__
-            print(f"ERROR: ||{e}|| caught in {f[0]}. Moving on to next file...")
+            print(f"ERROR: ||{e}|| caught in {f[0]}. Moving on to next file...\n---------------------------------------")
+            error_count+=1
             sys.stdout = silent if args.silent else sys.__stdout__
 
     sys.stdout = sys.__stdout__
-    print(f"{len(list_files)-error_count} of {len(list_files)} DetectionHistory files found were successfully parsed, with output written to \"{args.output}\" in {time.process_time()} seconds.")
-    print("---------------------------------------")
+    print(f"{len(list_files)-error_count} of {len(list_files)} DetectionHistory files found were successfully parsed, with output written to \"{args.output}\" in {time.process_time()} seconds.\n---------------------------------------")
 
 if __name__ == "__main__":
     main()
