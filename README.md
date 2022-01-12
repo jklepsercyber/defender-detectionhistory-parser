@@ -1,6 +1,6 @@
 # DetectionHistory Parser
 
-This repo contains the open-source Python code of my Windows Defender DetectionHistory parser, and the code packaged into an executable for easy use.
+This repo contains the open-source Python code of my Windows Defender DetectionHistory parser, and the code packaged into an executable for easy use. Also included are a KAPE target and module for seamless integration into your workflow.
 
 ## Command Line Interface
 
