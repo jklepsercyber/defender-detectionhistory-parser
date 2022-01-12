@@ -6,6 +6,8 @@ This repo contains the open-source Python code of my Windows Defender DetectionH
 
 ![CLI](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/CLI.PNG?raw=true)
 
+The DetectionHistory parser provides a variety of options, designed to tailor the experience to your needs. The greedy option, is designed to pick up files outside of Windows' naming convention that may have been renamed for storage or other purposes. It is advised to simply either point the parser at the DetectionHistory folder listed in **Artifact Creation Documentation** with **-r** enabled, or copy the unmodified files out to a directory of your choice. 
+
 ## Artifact Creation Documentation
 
 DetectionHistory files may be created and found on, at the very least, Windows 10 systems. The creation of these files is an afterproduct of Windows Defender's real-time/cloud-delivered protection(RTP) blocking threats such as Potentially Unwanted Applications (PUAs), viruses, worms, trojans, etc. The user should have these features turned on in the Windows Security app, under Windows Security > Virus and Threat Protection > Virus and Threat Protection Settings:  
