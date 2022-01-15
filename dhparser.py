@@ -37,7 +37,7 @@ arg_parser.add_argument('-r',
 arg_parser.add_argument('-s',
                         '--silent',
                         action='store_true',
-                        help='Silences output to command line, including non-critical warnings. Confirmation of finished processing and critical errors will still be shown.',
+                        help='Silences output to command line, including non-critical warnings. Confirmation of found files, finished processing and critical errors will still be shown.',
                         required=False)       
 arg_parser.add_argument('-v',
                         '--version',
@@ -330,6 +330,10 @@ def main():
                     list_files.append([os.path.join(directory, name), name]) # save name, so we don't have to regex out filename during outfile writing later on
     elif os.path.isfile(args.file):
         list_files.append(args.file)
+    elif os.path.isdir(args.file):
+        sys.stdout = sys.__stdout__
+        print(f"You specified \"{args.file}\", which is a directory. Please specify the -r argument if you wish to parse a directory, and try again. \n")
+        return        
     else:
         sys.stdout = sys.__stdout__
         print(f"Path \"{args.file}\" is not a valid file or directory. Please validate the desired input and try again. \n")
@@ -341,6 +345,9 @@ def main():
                 parse_detection_history([os.path.normpath(args.file), os.path.basename(args.file)], args.output)
                 break
             else:
+                sys.stdout = sys.__stdout__
+                print(f"Found DetectionHistory file \"{f[1]}\".")
+                sys.stdout = silent if args.silent else sys.__stdout__
                 parse_detection_history(f, args.output)
         except Exception as e:
             sys.stdout = sys.__stdout__
