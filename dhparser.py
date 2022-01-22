@@ -341,6 +341,9 @@ def main():
                 parse_detection_history([os.path.normpath(args.file), os.path.basename(args.file)], args.output)
                 break
             else:
+                sys.stdout = sys.__stdout__
+                print(f"Found DetectionHistory file \"{f[1]}\" at {f[0]}.")
+                sys.stdout = silent if args.silent else sys.__stdout__
                 parse_detection_history(f, args.output)
         except Exception as e:
             sys.stdout = sys.__stdout__
