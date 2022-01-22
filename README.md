@@ -118,4 +118,4 @@ This parser is a continued project, to be updated with more features, fixed issu
 -  SANS Institute
 -  Chad Tilbury
 -  David Nides
--  Andrew Rathburn  
+-  Andrew Rathbun  
