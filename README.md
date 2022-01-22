@@ -1,6 +1,6 @@
 # DetectionHistory Parser
 
-This repo contains the open-source Python code of my Windows Defender DetectionHistory parser, and the code packaged into an executable for easy use. Also included are a KAPE target and module for seamless integration into your workflow.
+This repo contains the open-source Python code of my Windows Defender DetectionHistory parser, and the code packaged into an executable for easy use. Also included are a KAPE Target and Module for seamless integration into your workflow.
 
 ## Command Line Interface
 
@@ -10,7 +10,7 @@ The DetectionHistory parser provides a variety of options, designed to tailor th
 
 ## Artifact Creation Documentation
 
-DetectionHistory files may be created and found on, at the very least, Windows 10 systems. The creation of these files is an afterproduct of Windows Defender's real-time/cloud-delivered protection(RTP) blocking threats such as Potentially Unwanted Applications (PUAs), viruses, worms, trojans, etc. The user should have these features turned on in the Windows Security app, under Windows Security > Virus and Threat Protection > Virus and Threat Protection Settings:  
+DetectionHistory files may be created and found on, at the very least, Windows 10 systems. The creation of these files is an after-product of Windows Defender's real-time/cloud-delivered protection(RTP) blocking threats such as Potentially Unwanted Applications (PUAs), viruses, worms, trojans, etc. The user should have these features turned on in the Windows Security app, under Windows Security > Virus and Threat Protection > Virus and Threat Protection Settings:  
 
 ![RequiredSettings](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/security%20settings.PNG?raw=true)
 
@@ -18,7 +18,7 @@ When Windows Defender detects one of these threats, the user is presented first 
 
 ![Noti](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/TestNotification.PNG?raw=true)
 
-At this point, Windows Defender places a DetectionHistory file under **[root]\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory\[numbered folder]\[File GUID]**. As long as the file exists in this directory, Windows Defender will pick it up and display a few details in the "Protection History" tab. This can be found under Windows Security > Virus and Threat Protection > Current Threats/Protection History. If this DetectionHistory file shown here is deleted, the notification would disappear along with it:
+At this point, Windows Defender places a DetectionHistory file under `[root]\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory\[numbered folder]\[File GUID]`. As long as the file exists in this directory, Windows Defender will pick it up and display a few details in the "Protection History" tab. This can be found under Windows Security > Virus and Threat Protection > Current Threats/Protection History. If this DetectionHistory file shown here is deleted, the notification would disappear along with it:
 
 ![FileAndNoti](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/file%20and%20protection%20history.PNG?raw=true)
 
@@ -26,17 +26,17 @@ A great resource for attempting to generate these notifications on your own syst
 
 ## Artifact Structure Documentation
 
-For clarity and reader accessibility, this documentation will describe the contents of the DetectionHistory file, "8CC4BE3D-8D3F-4952-9953-F24EB6638A37", located in this repo.
+For clarity and reader accessibility, this documentation will describe the contents of the DetectionHistory file, `8CC4BE3D-8D3F-4952-9953-F24EB6638A37`, located in this repo.
 
 **First Section**
 
 ![FileBegin](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/filebegin.png)
 
-The file begins with a header, '0x0800000008', taking up the first 5 bytes in every known scenario. The parser takes this into account and will move on from the current file if the bytes don't match this header. More complicated is the DetectionID GUID- interestingly, the first 3 numbers (seperated by dashes) have their endianness swapped, while the remaining two numbers are unmodified. The DetectionID is used by Windows' API to keep track of each threat on the backend. Following this, we see a familar dictionary-like style of information. Each key/value pair is delimited by an ASCII colon/'0x3A' byte, making it easy differentiating field names from their values. While the purpose of "Magic Version" is unknown, we do see the threat name that would have been presented to the user in the original Windows Defender notification (in this case, Trojan:Win32/Ulthar.A!ml).
+The file begins with a header, `0x0800000008`, taking up the first 5 bytes in every known scenario. The parser takes this into account and will move on from the current file if the bytes don't match this header. More complicated is the DetectionID GUID- interestingly, the first 3 numbers (separated by dashes) have their endianness swapped, while the remaining two numbers are unmodified. The DetectionID is used by Windows' API to keep track of each threat on the backend. Following this, we see a familiar dictionary-like style of information. Each key/value pair is delimited by an ASCII colon/`0x3A` byte, making it easy differentiating field names from their values. While the purpose of "Magic Version" is unknown, we do see the threat name that would have been presented to the user in the original Windows Defender notification (in this case, `Trojan:Win32/Ulthar.A!ml`).
 
 ![threatstatusid](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/threatstatusid.png)
 
-At the same hex offset, '0000000F0', in every DetectionHistory file, the current ThreatStatusID of the given DetectionID can be found. The ID has many different values which represent any user action taken on the threat, such a quarantine, remove, allow, etc. As the user takes actions, the DetectionHistory file is updated with the corresponding ThreatStatusID. More information is available for each ThreatStatus [on Microsoft's MSFT_MpThreatDetection class documentation.](https://docs.microsoft.com/en-us/previous-versions/windows/desktop/defender/msft-mpthreatdetection) 
+At the same hex offset, `0000000F0`, in every DetectionHistory file, the current ThreatStatusID of the given DetectionID can be found. The ID has many different values which represent any user action taken on the threat, such a quarantine, remove, allow, etc. As the user takes actions, the DetectionHistory file is updated with the corresponding ThreatStatusID. More information is available for each ThreatStatus [on Microsoft's MSFT_MpThreatDetection class documentation.](https://docs.microsoft.com/en-us/previous-versions/windows/desktop/defender/msft-mpthreatdetection) 
 
 ![firsttransition](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/magicvers_to_general.png)
 
@@ -52,11 +52,11 @@ To summarize, the available data from the first section is as follows:
 
 **Second Section**
 
-This is the biggest section of the DetectionHistory file. The majority of its values are plaintext hash values, registry keys or identifiers. Some field names are followed with nearly empty values, only containing one or two bytes, whose meaning is unknown. Some values, which I will go over, are stored as endian-swapped hexademical numbers. 
+This is the biggest section of the DetectionHistory file. The majority of its values are plain text hash values, registry keys or identifiers. Some field names are followed with nearly empty values, only containing one or two bytes, whose meaning is unknown. Some values, which I will go over, are stored as endian-swapped hexadecimal numbers. 
 
 ![secondsection](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/secondsection.png)
 
-The large box shows the general form of data in this section- A field name, seperated by empty space as the "file" field was in the last section, followed by some plaintext or hexadecimal value. A field with a hexadecimal value is shown under ThreatTrackingStartTime, shown in the lower set of boxes, and also the only timestamp value included in the file. The timestamp is stored in FILETIME format, in the UTC timezone. As such, a custom function was written into the parser to perform these operations. The operations include an endian-swap and manual hex conversion. 
+The large box shows the general form of data in this section- A field name, separated by empty space as the "file" field was in the last section, followed by some plain text or hexadecimal value. A field with a hexadecimal value is shown under ThreatTrackingStartTime, shown in the lower set of boxes, and also the only timestamp value included in the file. The timestamp is stored in FILETIME format, in the UTC timezone. As such, a custom function was written into the parser to perform these operations. The operations include an endian-swap and manual hex conversion. 
 
 ![threatsize](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/size.PNG)
 ![threatid](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/id.PNG)
@@ -65,7 +65,7 @@ Some other hexadecimal values simply need to be endian-swapped and converted to 
 
 ![evtx_1116_and_2050](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/evtx_1116_2050.PNG)
 
-While there is not much documentation on the use of ThreatIDs, [Windows 10 and Server 2019 Powershell appears to include a way to use ThreatIDs to retrieve previous Windows Defender detections.](https://docs.microsoft.com/en-us/powershell/module/defender/get-mpthreatdetection?view=windowsserver2019-ps) On a side note, the Threat ID pictured above was also included in the first section (without its accompanying field name), right after the file header (in this case, '0x9D170480'). The reason for this may only serve for Windows to have a place to easily retrieve the ThreatID. Can you find it?
+While there is not much documentation on the use of ThreatIDs, [Windows 10 and Server 2019 PowerShell appears to include a way to use ThreatIDs to retrieve previous Windows Defender detections.](https://docs.microsoft.com/en-us/PowerShell/module/defender/get-mpthreatdetection?view=windowsserver2019-ps) On a side note, the Threat ID pictured above was also included in the first section (without its accompanying field name), right after the file header (in this case, `0x9D170480`). The reason for this may only serve for Windows to have a place to easily retrieve the ThreatID. Can you find it?
 
 ![regkey](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/regkey.png)
 
@@ -94,7 +94,7 @@ To summarize, the available data from the second section is as follows:
 
 ![thirdsection](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/thirdsection.png)
 
-The beginning of the third and final section is delimited by a '\0x0A\0x00' byte sequence, immediately followed by the same timestamp used in ThreatTrackingStartTime. This is visible in the box on line 00000730. The sequence does not decode to a ASCII character and is used nowhere else, so this makes it easy for the parser to tell when the section begins. The reason that the timestamp is included again here is unknown.
+The beginning of the third and final section is delimited by a `\0x0A\0x00` byte sequence, immediately followed by the same timestamp used in ThreatTrackingStartTime. This is visible in the box on line 00000730. The sequence does not decode to a ASCII character and is used nowhere else, so this makes it easy for the parser to tell when the section begins. The reason that the timestamp is included again here is unknown.
 
 There are a maximum of three fields here that we may parse out, shown above and boxed on the right. The field names are not included, so information has been taken from the live system view of the artifact and documentation to provide the clearest results. The first two values, which reference a desktop user and "explorer.exe", are known to represent the domain user and the spawning process, or in other words, the process used to launch the identified threat. This could be useful when identifying if certain pieces of malware were run from the command line, and then detected by Defender RTP. The third field is of an unknown purpose, as it is not always present through each DetectionHistory file. Given the value of "NT AUTHORITY/SYSTEM", it is likely that this represents the security group the user account belongs to (through analysis of the user SID).
 
@@ -118,4 +118,3 @@ This parser is a continued project, to be updated with more features, fixed issu
 -  SANS Institute
 -  Chad Tilbury
 -  David Nides
-
