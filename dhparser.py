@@ -12,7 +12,7 @@ sys.path.append("./")
 
 # DEFINE COMMAND LINE ARGS   
 arg_parser = argparse.ArgumentParser(description='Parse the contents of the given Windows Defender DetectionHistory file(s) into a readable format.')
-arg_parser.version = "DetectionHistory Parser v1.0. Thank you for using my parser!"
+arg_parser.version = "DetectionHistory Parser v1.0.1. Thank you for using my parser!"
 
 arg_parser.add_argument('-f',
                         '--file',
@@ -34,13 +34,12 @@ arg_parser.add_argument('-r',
                         action='store_true',
                         help='Recursive input. MUST SPECIFY if you need to parse a (sub)directory of DetectionHistory files. Only picks up files which match Windows\' naming convention of DetectionHistory files.',
                         required=False)     
-arg_parser.add_argument('-s',
-                        '--silent',
-                        action='store_true',
-                        help='Silences output to command line, including non-critical warnings. Confirmation of finished processing and critical errors will still be shown.',
-                        required=False)       
 arg_parser.add_argument('-v',
-                        '--version',
+                        '--verbose',
+                        action='store_true',
+                        help='Includes additional output in command line for each file processed, including non-critical/normal warnings. Without this enabled, confirmation of finished processing and critical errors will still be shown.',
+                        required=False)       
+arg_parser.add_argument('--version',
                         action='version',
                         help='Displays the version of the application and exits.')
 
@@ -236,7 +235,7 @@ def parse_detection_history(user_in, user_out):
                         if CURRENT_MODE==KEY_READ_MODE:
                             temp_key = re.sub("\x00", "", temp_key)
                             if "Magic." in temp_key[0:6]:
-                                print("Extraneous \"Magic Version\" key detected! Continuing...")
+                                print("WARNING: Extraneous \"Magic Version\" key detected! Continuing...")
                                 temp_key = "" # reset for next KEY_READ_MODE run
                                 LAST_READ_MODE = VALUE_READ_MODE # skip over this key, read in next key
                             elif "Time" in temp_key:
@@ -258,7 +257,7 @@ def parse_detection_history(user_in, user_out):
                         elif CURRENT_MODE==VALUE_READ_MODE:
                             final_value = re.sub("\x00", "", parsed_value_dict[temp_key])
                             if "Threat" in final_value[0:6] or "regkey" in final_value[0:6]: # check for values that should be keys
-                                print(f"Irregularity in file/empty value caused skip in parsing for keys \"{temp_key}\" and \"{final_value}\". Configuring...")
+                                print(f"WARNING: Irregularity in file/empty value caused skip in parsing for keys \"{temp_key}\" and \"{final_value}\". Configuring...")
                                 parsed_value_dict[temp_key] = "" # reset extraneous value for temp_key
                                 parsed_value_dict[final_value] = "" # this value containing "Threat" or "regkey" should have been a key
                                 temp_key = final_value # set the final_value to the new key
@@ -287,14 +286,15 @@ def parse_detection_history(user_in, user_out):
                         f.read(10)
                         continue
                     try:
-                        if len(re.sub(r'\W+', '', chunk.decode('windows-1252')))>=1: # regex function removes all non-alphanum characters
-                            chunk = chunk+f.read(2) # double check if there are 2 alphanum chars in sequence. sometimes there are isolated, irrelevant hex values in file which are encodable chars
-                            if len(re.sub(r':(?=..(?<!\d:\d\d))|[^a-zA-Z0-9 ](?<!:)', '', chunk.decode('windows-1252')))>=2 and b'\x00' in chunk: # ensure colons are treated as alphanum chars with regex
+                        if len(re.sub(r'\W+', '', chunk.decode('windows-1252')))>=1 and b'\x00' in chunk: # regex function removes all non-alphanum characters
+                            chunk_extra = f.read(2) # we'll want to make sure these are windows-1252 valid bytes as well
+                            chunk += chunk_extra # double check if there are 2 alphanum chars in sequence. sometimes there are isolated, irrelevant hex values in file which are encodable chars
+                            if len(re.sub(r':(?=..(?<!\d:\d\d))|[^a-zA-Z0-9 ](?<!:)', '', chunk.decode('windows-1252')))>=2 and b'\x00' in chunk_extra: # ensure colons are treated as alphanum chars with regex
                                 CURRENT_EOF_SECTION_KEY=CURRENT_EOF_SECTION_KEY+1 
                                 parsed_value_dict[EOF_SECTION_KEYS[CURRENT_EOF_SECTION_KEY]] = chunk.decode('windows-1252')
                                 CURRENT_MODE=VALUE_READ_MODE
                     except UnicodeDecodeError as e:
-                        print(f"||{e}|| caught for bytes {chunk} : Unreadable hex pattern identified. Continuing...")
+                        print(f"WARNING: ||{e}|| caught for bytes {chunk} : Unreadable hex pattern identified. Continuing...")
                 elif CURRENT_MODE==VALUE_READ_MODE:                  
                     if chunk==b'\x00\x00': # Check to switch to NULL_MODE 
                         parsed_value_dict[EOF_SECTION_KEYS[CURRENT_EOF_SECTION_KEY]] = re.sub("\x00", "", parsed_value_dict[EOF_SECTION_KEYS[CURRENT_EOF_SECTION_KEY]])       
@@ -314,12 +314,11 @@ def parse_detection_history(user_in, user_out):
 
 
 def main():
-    print("\n---------------------------------------\nDetectionHistory Parser v1.0 by Jordan Klepser\nhttps://github.com/jklepsercyber/\n---------------------------------------\n")
+    print("\n---------------------------------------\nDetectionHistory Parser v1.0.1 by Jordan Klepser\nhttps://github.com/jklepsercyber/\n---------------------------------------\n")
     args = arg_parser.parse_args()
     list_files = []
     error_count = 0
-    silent = io.StringIO()
-    sys.stdout = silent if args.silent else sys.__stdout__
+    unverbose = io.StringIO()
 
     if args.recursive and os.path.isdir(args.file): # search directory for DetectionHistory files
         for directory, dirnames, files in os.walk(args.file): # dirnames unused, but needs to be included for python's sake
@@ -331,28 +330,35 @@ def main():
     elif os.path.isfile(args.file):
         list_files.append(args.file)
     else:
-        sys.stdout = sys.__stdout__
         print(f"Path \"{args.file}\" is not a valid file or directory. Please validate the desired input and try again. \n")
         return
+    if any("\\ProgramData\\Microsoft\\Windows Defender\\" in pth[0] for pth in list_files):
+        print("""WARNING: '[root]\\ProgramData\\Microsoft\\Windows Defender\\' is a protected directory. Pointing DHParser there may result in an error or files not found. It is
+        recommended to first navigate to '[root]\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory', using File Explorer if on Windows, to ensure
+        your user has access. Alternatively, copy out the '\\DetectionHistory\\' folder to a location of your choice, and point DHParser at that folder with '-r' enabled.\n""")
 
+    sys.stdout = unverbose if not args.verbose else sys.__stdout__
     for f in list_files:
         try:
             if len(list_files)==1:
+                sys.stdout = sys.__stdout__
+                print(f"Found DetectionHistory file \"{os.path.basename(args.file)}\" at {os.path.normpath(args.file)}.")      
+                sys.stdout = unverbose if not args.verbose else sys.__stdout__          
                 parse_detection_history([os.path.normpath(args.file), os.path.basename(args.file)], args.output)
                 break
             else:
                 sys.stdout = sys.__stdout__
                 print(f"Found DetectionHistory file \"{f[1]}\" at {f[0]}.")
-                sys.stdout = silent if args.silent else sys.__stdout__
+                sys.stdout = unverbose if not args.verbose else sys.__stdout__
                 parse_detection_history(f, args.output)
         except Exception as e:
             sys.stdout = sys.__stdout__
-            print(f"ERROR: ||{e}|| caught in {f[0]}. Moving on to next file...\n---------------------------------------")
-            error_count+=1
-            sys.stdout = silent if args.silent else sys.__stdout__
+            print(f"ERROR: ||{e}|| caught in {f[1]}. Moving on to next file...\n---------------------------------------")
+            sys.stdout = unverbose if not args.verbose else sys.__stdout__
+            error_count += 1
 
     sys.stdout = sys.__stdout__
-    print(f"{len(list_files)-error_count} of {len(list_files)} DetectionHistory files found were successfully parsed, with output written to \"{args.output}\" in {time.process_time()} seconds.\n---------------------------------------")
+    print(f"\n{len(list_files)-error_count} of {len(list_files)} DetectionHistory files found were successfully parsed, with output written to \"{args.output}\" in {time.process_time()} seconds.\n---------------------------------------")
 
 if __name__ == "__main__":
     main()
