@@ -1,0 +1,48 @@
+name: Windows.Applications.DefenderDHParser
+
+description: |
+    This artifact leverages Windows Defender DetectionHistory tool to parse and return
+    the parameters of Windows Defender detections contained in Detection History files.
+
+author: Eduardo Mattos - @eduardfir
+
+reference: 
+  - https://github.com/jklepsercyber/defender-detectionhistory-parser
+  - https://www.sans.org/blog/uncovering-windows-defender-real-time-protection-history-with-dhparser/
+
+tools:
+  - name: DHParser
+    url:  https://github.com/jklepsercyber/defender-detectionhistory-parser/archive/refs/tags/v1.0.zip
+
+parameters:
+  - name: DetectionHistoryPath
+    description: "Path to Defender Detection History Files"
+    default: C:\ProgramData\Microsoft\Windows Defender\Scans\History\Service\
+
+sources:
+  - query: |
+        -- preparation
+        LET Hostname <= SELECT Hostname as Host FROM info()
+        LET Toolzip <= SELECT FullPath FROM Artifact.Generic.Utils.FetchBinary(ToolName="DHParser", IsExecutable=FALSE)
+        LET TmpDir <= tempdir(remove_last=TRUE)
+        LET UnzipIt <= SELECT * FROM unzip(filename=Toolzip.FullPath, output_directory=TmpDir)
+        LET DHParseExePath <= SELECT NewPath as ExePath FROM UnzipIt
+                              WHERE OriginalPath =~ "dhparser.exe"
+
+        -- execute DHParser
+        LET ExecDHParser <= SELECT * FROM execve(argv=[
+                        DHParseExePath.ExePath[0], 
+                        "-rgf", DetectionHistoryPath,
+                        "-o", TmpDir + "\\Output"])
+               
+        -- store json files' results paths          
+        LET jsonFiles <= SELECT Name, FullPath FROM glob(globs="/Output/*", root=TmpDir)
+   
+        -- parse json files
+        SELECT * FROM foreach(row=jsonFiles,
+            query={
+                SELECT parse_json(data=Data) as Detection,
+                    { SELECT Host FROM Hostname } as Hostname
+                FROM read_file(filenames=FullPath)
+        })
+
