@@ -10,7 +10,8 @@ from datetime import datetime, timedelta
 from typing import final
 sys.path.append("./")
 
-# DEFINE COMMAND LINE ARGS   
+# DEFINE COMMAND LINE ARGS
+
 arg_parser = argparse.ArgumentParser(description='Parse the contents of the given Windows Defender DetectionHistory file(s) into a readable format.')
 arg_parser.version = "DetectionHistory Parser v1.0.1. Thank you for using my parser!"
 
@@ -334,8 +335,8 @@ def main():
         return
     if any("\\ProgramData\\Microsoft\\Windows Defender\\" in pth[0] for pth in list_files):
         print("""WARNING: '[root]\\ProgramData\\Microsoft\\Windows Defender\\' is a protected directory. Pointing DHParser there may result in an error or files not found. It is
-        recommended to first navigate to '[root]\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory', using File Explorer if on Windows, to ensure
-        your user has access. Alternatively, copy out the '\\DetectionHistory\\' folder to a location of your choice, and point DHParser at that folder with '-r' enabled.\n""")
+         recommended to first navigate to '[root]\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory', using File Explorer if on Windows, to ensure
+         your user has access. Alternatively, copy out the '\\DetectionHistory\\' folder to a location of your choice, and point DHParser at that folder with '-r' enabled.\n""")
 
     sys.stdout = unverbose if not args.verbose else sys.__stdout__
     for f in list_files:
