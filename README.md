@@ -14,11 +14,11 @@ The only required arguments are `-f` and `-o`, where `-f` specifies your filenam
 
 When attempting to parse a single file, running `dhparser.exe -f [file_name] -o [outfolder_name]` yields the following:
 
-![command2]()
+![command2](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/example_command2.PNG?raw=true)
 
 To parse normal DetectionHistory files from a given directory, add `-r` and run `dhparser.exe -rf [dir_name] -o [outfolder_name]`:
 
-![command1]()
+![command1](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/example_command1.PNG?raw=true)
 
 Using `-g` with `-r` is the "greedy" option, where all files without an extension will be picked up, and DHParser will attempt to parse each. This is useful for applications like KAPE or Velocidex, which may output collected DetectionHistory files with a different name. Running `dhparser.exe -rgf [dir_name] -o [outfolder_name]` yields the following:
 
@@ -28,7 +28,7 @@ Using `-g` with `-r` is the "greedy" option, where all files without an extensio
 
 Users of forensic tools such as DHParser can encounter permission denied/file not found errors when pointing the tools at certain protected directories. The first part of the DetectionHistory path (discussed in the next section) is `[root]\ProgramData\Microsoft\Windows Defender\` which is a protected directory. This means user-based reads/writes may prompt the user to enable special priveleges for directory access. So, if the priveleges are not pre-enabled, take caution for these issues. DHParser includes a warning on this if the directory is specifed on `-f`, but the best solution is simply to go in and copy out `[root]\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory\` to an accessible directory of the user's choosing. After that, point DHParser at your copy of the DetectionHistory folder.
 
-![ProtectedWarning]()
+![ProtectedWarning](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/protected_warning.PNG?raw=true)
 
 I encounter no issues on this machine since I've already granted myself access permissions, but it's worth mentioning that this problem could arise.
 
