@@ -20,9 +20,11 @@ To parse normal DetectionHistory files from a given directory, add `-r` and run 
 
 ![command1](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/example_command1.PNG?raw=true)
 
-Using `-g` with `-r` is the "greedy" option, where all files without an extension will be picked up, and DHParser will attempt to parse each. This is useful for applications like KAPE or Velocidex, which may output collected DetectionHistory files with a different name. Running `dhparser.exe -rgf [dir_name] -o [outfolder_name]` yields the following:
+Using `-g` with `-r` is the "greedy" option, where all files without an extension will be picked up, and DHParser will attempt to parse each. This is useful when using applications like KAPE or Velocidex, which may output collected DetectionHistory files with a different name. Running `dhparser.exe -rgf [dir_name] -o [outfolder_name]` yields the following:
 
-![command3]()
+![command3](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/example_command3.png?raw=true)
+
+As you can see, this may result in a lot of files picked up (git files in this case) that are not actually DetectionHistory files. As described later, DHParser can determine if a file doesn't fit the DetectionHistory critieria, and throws an error if so. No excess files are generated due to these errors. To summarize, use of `-g` is recommended when pointing DHParser at directories you know will contain DetectionHistory files, and when you know their names may be modified due to an external artifact collection solution (KAPE, Velocidex)
 
 **Protected Directories**
 
