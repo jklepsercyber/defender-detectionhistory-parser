@@ -40,7 +40,8 @@ arg_parser.add_argument('-v',
                         action='store_true',
                         help='Includes additional output in command line for each file processed, including non-critical/normal warnings. Without this enabled, confirmation of finished processing and critical errors will still be shown.',
                         required=False)       
-arg_parser.add_argument('--version',
+arg_parser.add_argument('-z',
+                        '--version',
                         action='version',
                         help='Displays the version of the application and exits.')
 
