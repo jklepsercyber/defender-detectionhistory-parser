@@ -1,3 +1,4 @@
+from plistlib import InvalidFileException
 import sys
 import os
 import argparse
@@ -70,7 +71,7 @@ def parse_header_and_guid(file):
     header = file.read(6) # 6 = known DetectionHistory header size
     if header != b'\x08\x00\x00\x00\x08\x00': # check file header against known valid DetectionHistory file header
         print("Invalid DetectionHistory file!")
-        raise(IOError)
+        raise(InvalidFileException)
     file.read(18) # skipping over some zeroes, and an unknown 3-byte sequence between offset 08-0A
     guid_oct = list()
     guid_oct.append(binascii.hexlify(file.read(4)))
