@@ -1,4 +1,4 @@
-# DetectionHistory Parser
+# DetectionHistory Parser v1.0.1
 
 This repo contains the open-source Python code of my Windows Defender DetectionHistory parser, and the code packaged into an executable for easy use. Also included are a KAPE Target and Module for seamless integration into your workflow.
 
@@ -6,7 +6,31 @@ This repo contains the open-source Python code of my Windows Defender DetectionH
 
 ![CLI](https://github.com/jklepsercyber/defender-detectionhistory-parser/blob/develop/images/CLI.PNG?raw=true)
 
-The DetectionHistory parser provides a variety of options, designed to tailor the experience to your needs. The greedy option, is designed to pick up files outside of Windows' naming convention that may have been renamed for storage or other purposes. It is advised to simply either point the parser at the DetectionHistory folder listed in **Artifact Creation Documentation** with **-r** enabled, or copy the unmodified files out to a directory of your choice. 
+The DetectionHistory parser provides a variety of options, designed to tailor the experience to your needs. The greedy option, is designed to pick up files outside of Windows' naming convention that may have been renamed for storage or other purposes. It is advised to simply either point the parser at the DetectionHistory folder listed in **Artifact Creation Documentation** with `-r` enabled, or copy the unmodified files out to a directory of your choice. 
+
+The only required arguments are `-f` and `-o`, where `-f` specifies your filename (or directory if using `-r`), and `-o` specifies the folder which you'd like your JSON output files placed.
+
+**Example Commands**
+
+When attempting to parse a single file, running `dhparser.exe -f [file_name] -o [outfolder_name]` yields the following:
+
+![command2]()
+
+To parse normal DetectionHistory files from a given directory, add `-r` and run `dhparser.exe -rf [dir_name] -o [outfolder_name]`:
+
+![command1]()
+
+Using `-g` with `-r` is the "greedy" option, where all files without an extension will be picked up, and DHParser will attempt to parse each. This is useful for applications like KAPE or Velocidex, which may output collected DetectionHistory files with a different name. Running `dhparser.exe -rgf [dir_name] -o [outfolder_name]` yields the following:
+
+![command3]()
+
+**Protected Directories**
+
+Users of forensic tools such as DHParser can encounter permission denied/file not found errors when pointing the tools at certain protected directories. The first part of the DetectionHistory path (discussed in the next section) is `[root]\ProgramData\Microsoft\Windows Defender\` which is a protected directory. This means user-based reads/writes may prompt the user to enable special priveleges for directory access. So, if the priveleges are not pre-enabled, take caution for these issues. DHParser includes a warning on this if the directory is specifed on `-f`, but the best solution is simply to go in and copy out `[root]\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory\` to an accessible directory of the user's choosing. After that, point DHParser at your copy of the DetectionHistory folder.
+
+![ProtectedWarning]()
+
+I encounter no issues on this machine since I've already granted myself access permissions, but it's worth mentioning that this problem could arise.
 
 ## Artifact Creation Documentation
 
@@ -118,4 +142,5 @@ This parser is a continued project, to be updated with more features, fixed issu
 -  SANS Institute
 -  Chad Tilbury
 -  David Nides
--  Andrew Rathbun  
+-  Andrew Rathbun 
+-  Eduardo Mattos
